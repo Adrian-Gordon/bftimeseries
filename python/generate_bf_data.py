@@ -47,11 +47,25 @@ class GenerateData:
 
     return input_batches, output_batches
 
+  def reshape(self, input_array, sequence_length, input_dimension):
+    reshaped = [None]* sequence_length 
+
+    for t in range(sequence_length):
+      x = input_array[:,t].reshape(-1,input_dimension)
+      reshaped[t]=x
+    return(np.array(reshaped))
+
 #test
 gd = GenerateData('../nodejs/data/generate.csv',60)
 #print("processed data: ")
 #print(gd.processed_data)
 #print(gd.data[0:60])
-input_batches, output_batches = gd.getTrainingSample(60,2,30,10)
-print(input_batches)
-print(output_batches)
+input_batch, output_batch = gd.getTrainingSample(60,2,30,10)
+print(input_batch)
+print(output_batch)
+
+reshaped_input_batch = gd.reshape(np.array(input_batch),30, 40)
+print(reshaped_input_batch)
+
+reshaped_output_batch = gd.reshape(np.array(output_batch), 10, 2)
+print(reshaped_output_batch)
