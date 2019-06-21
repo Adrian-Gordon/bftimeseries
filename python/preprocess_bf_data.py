@@ -11,7 +11,16 @@ from sklearn.externals import joblib
 class GenerateData:
   data =[]
   processed_data =pd.DataFrame()
-  def __init__(self, datafile_path,scaler_path,seq_length, output_path):
+
+  def __init__(self, datafile_path,scaler_path,seq_length, offset, output_path):
+    '''
+      arguments:
+        datafile_path -- string, filepath for input datafile
+        scaler_path -- struing, path to save scaler to
+        seq_length -- integer, no of entries per timeseries
+        offset -- integer, offset from start of data series to use in output. 
+                  e.g. seq_length= 30, offset = 30 : skip first 30,then use the next 30
+    '''
     GenerateData.data = pd.read_csv(datafile_path)
     print("imported data from "+ datafile_path)
     GenerateData.data['layprice1'] = GenerateData.data['layprice1'].replace(0,1000)
@@ -60,16 +69,28 @@ class GenerateData:
 
     print("Generating Sequences")
    # print(GenerateData.data)
-    _nsequences = len(GenerateData.data) / seq_length
-    #print(_nsequences)
+    _nsequences = len(GenerateData.data) / ( seq_length + offset)
+    print(_nsequences)
+    
     for i in range (_nsequences):
-      _sequence = GenerateData.data[i * seq_length: (i * seq_length) + seq_length]
-      #print(_sequence)
+      _sequence = GenerateData.data[i * seq_length + offset: (i * seq_length) + seq_length + offset]
+      add_it = False
+      for index, row in _sequence.iterrows():
+        if row['layprice1'] <= 15 and row['backprice1'] <= 20:
+          add_it = True
+          
+      if add_it:
+          #print("Add it")
+          #diff = _sequence.pct_change()
+          #GenerateData.processed_data = GenerateData.processed_data.append(diff,ignore_index = True).fillna(value=0)
+          GenerateData.processed_data = GenerateData.processed_data.append(_sequence,ignore_index = True)
 
-      diff = _sequence.pct_change()
+     # print(_sequence)
+
+     # diff = _sequence.pct_change()
       #print(diff)
-      GenerateData.processed_data = GenerateData.processed_data.append(diff,ignore_index = True).fillna(value=0)
-     
+     # GenerateData.processed_data = GenerateData.processed_data.append(diff,ignore_index = True).fillna(value=0)
+     # GenerateData.processed_data = GenerateData.processed_data.append(_sequence,ignore_index = True)
       #standardise everything
 
     print("Generated Sequences")
@@ -78,19 +99,19 @@ class GenerateData:
     scaler = StandardScaler()
 
     GenerateData.processed_data[['layprice1','laydepth1','layprice2','laydepth2','layprice3','laydepth3','layprice4','laydepth4','layprice5','laydepth5','layprice6','laydepth6','layprice7','laydepth7','layprice8','laydepth8','layprice9','laydepth9','layprice10','laydepth10','backprice1','backdepth1','backprice2','backdepth2','backprice3','backdepth3','backprice4','backdepth4','backprice5','backdepth5','backprice6','backdepth6','backprice7','backdepth7','backprice8','backdepth8','backprice9','backdepth9','backprice10','backdepth10']]=scaler.fit_transform(GenerateData.processed_data[['layprice1','laydepth1','layprice2','laydepth2','layprice3','laydepth3','layprice4','laydepth4','layprice5','laydepth5','layprice6','laydepth6','layprice7','laydepth7','layprice8','laydepth8','layprice9','laydepth9','layprice10','laydepth10','backprice1','backdepth1','backprice2','backdepth2','backprice3','backdepth3','backprice4','backdepth4','backprice5','backdepth5','backprice6','backdepth6','backprice7','backdepth7','backprice8','backdepth8','backprice9','backdepth9','backprice10','backdepth10']])
-    #GenerateData.processed_data[['layprice1']] = scaler.fit_transform(GenerateData.processed_data[['layprice1']])
-    #save the scaler for later use
+      #save the scaler for later use
     print("Scaled")
     joblib.dump(scaler, scaler_path)
     print("Saved Scaler")
     print("Saving preprocessed data to: "+ output_path)
-    GenerateData.processed_data.to_csv(output_path)
+    GenerateData.processed_data.to_csv(output_path, index = False)
     print("Preprocessed data saved")
+    
 
   
 
 #test
-gd = GenerateData('../nodejs/data/generate.csv','../nodejs/data/scaler.save',60,'../nodejs/data/preprocessed_generate.csv')
+gd = GenerateData('../nodejs/data/generate.csv','../nodejs/data/scaler.save',30, 30,'../nodejs/data/preprocessed_generate.csv')
 #print("processed data: ")
 #print(gd.processed_data)
 #print(gd.data[0:60])
